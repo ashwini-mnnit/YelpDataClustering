@@ -33,7 +33,15 @@ def processVirtualTags():
     for bussinessId in GlobalBussinessTextDict:
         GlobalvirTagDict[bussinessId]=getVirtualTags(GlobalBussinessTextDict[bussinessId])
         addToVirtagList(GlobalvirTagDict[bussinessId])
+        
+def getdocdict(documentWordFreqDict,WordDocDictionary,total_N_doc):
 
+    docTFIDFDict = defaultdict(float) 
+    
+    for doc in documentWordFreqDict:
+        for word in documentWordFreqDict[doc]:
+            docTFIDFDict[word] = getTF(documentWordFreqDict[doc][word]) * getIDF(len(WordDocDictionary[word]),total_N_doc)
+    return docTFIDFDict
 def getVirtualTags(viewsDoc):
     WordDocDictionary = defaultdict(lambda: defaultdict(int)) 
     documentWordFreqDict = defaultdict(lambda: defaultdict(int))
@@ -46,25 +54,19 @@ def getVirtualTags(viewsDoc):
                     word=stemmer.stem(word.lower())
                     WordDocDictionary[word][textID] += 1
                     documentWordFreqDict[textID][word] += 1
-                    total_N_doc+=1    
+                    total_N_doc+=1        
 
-    docTFIDFDict = defaultdict(float) 
-    
-    for doc in documentWordFreqDict:
-        for word in documentWordFreqDict[doc]:
-            docTFIDFDict[word] = getTF(documentWordFreqDict[doc][word]) * getIDF(len(WordDocDictionary[word]),total_N_doc)
-             
-    toptags=getTop5results(docTFIDFDict)
+    docTFIDFDict=  getdocdict(documentWordFreqDict,WordDocDictionary,total_N_doc)
+    heap = [(-value, key) for key,value in docTFIDFDict.items()]
+    toptags = heapq.nsmallest(5, heap)
+    toptags = [(key, -value) for value, key in toptags]
+    return toptags;          
+
     rvList=list()        
     for doc in toptags:
         rvList.append(doc[0])
     return rvList
 
-def getTop5results(docScoreDict):
-    heap = [(-value, key) for key,value in docScoreDict.items()]
-    largest = heapq.nsmallest(5, heap)
-    largest = [(key, -value) for value, key in largest]
-    return largest; 
 
  
 def addVirtualTags(clusterData,sample_count,businessId):
